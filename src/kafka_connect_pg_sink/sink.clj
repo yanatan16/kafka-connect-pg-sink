@@ -16,12 +16,14 @@
 
 (defn put-records [{:keys [table db tuple-spec] :as state} records]
   (log/debugf "Pushing %d kafka record to PostgreSQL. first: %s state: %s" (count records) (pr-str (first records)) (pr-str state))
-  (try (->> records
-            (map #(get-tuple tuple-spec %))
-            (insert* db table)
+  (when (not-empty records)
+    (->> records
+         (map #(get-tuple tuple-spec %))
+         (insert* db table)
 
-            ;;TODO: Make this a deferred action that flushes
-            <!!)))
+         ;;TODO: Make this a deferred action that flushes
+         <!!))
+  state)
 
 (defn parse-json-tuple-spec [json]
   (->> (json/parse-string json true)
