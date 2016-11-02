@@ -1,4 +1,4 @@
-(defproject kafka-connect-pg-sink "0.1.3"
+(defproject kafka-connect-pg-sink "0.1.4-SNAPSHOT"
   :description "Kafka Connector Sink to push records to postgres"
   :url "https://github.com/yanatan16/kafka-connect-pg-sink"
   :license {:name "MIT"
