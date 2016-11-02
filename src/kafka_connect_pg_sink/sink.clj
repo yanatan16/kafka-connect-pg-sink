@@ -50,7 +50,7 @@
   :stop stop
   :put put-records}
 
- {:config-def config
+ {:config-def (config)
   :start (fn [cfg _]
            (log/infof "Starting PostgreSQL Sink Connector with config: %s" (pr-str cfg))
            cfg)
