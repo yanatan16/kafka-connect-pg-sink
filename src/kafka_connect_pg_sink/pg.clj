@@ -28,7 +28,7 @@
        (list-columns data)
        " VALUES "
        (list-params-seq data)
-       " ON CONFLICT DO NOTHING"))
+       " ON CONFLICT DO UPDATE"))
 
 (defn insert*
   "A copy of postgres.async/insert! that uses our custom insert sql"
