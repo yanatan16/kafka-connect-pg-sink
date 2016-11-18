@@ -14,12 +14,12 @@
    {}
    tuple-spec))
 
-(defn put-records [{:keys [table db tuple-spec] :as state} records]
-  (log/debugf "Pushing %d kafka record to PostgreSQL. first: %s state: %s" (count records) (pr-str (first records)) (pr-str state))
+(defn put-records [{:keys [table db tuple-spec on-conflict-cols] :as state} records]
+  (log/debugf "Pushing %d kafka record to PostgreSQL." (count records))
   (when (not-empty records)
     (->> records
          (map #(get-tuple tuple-spec %))
-         (insert* db table)
+         (#(insert* db table % on-conflict-cols))
 
          ;;TODO: Make this a deferred action that flushes
          <!!))
@@ -33,6 +33,7 @@
   (log/infof "Starting PostgreSQL Sink Task with config: %s" (pr-str cfg))
   (let [tuple-spec (parse-json-tuple-spec (:tuple.spec.json cfg))]
     {:tuple-spec tuple-spec
+     :on-conflict-cols (:insert.on.conflict.columns cfg)
      :table (:db.table cfg)
      :db (pg/open-db {:hostname (:db.hostname cfg)
                       :port (:db.port cfg)

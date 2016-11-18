@@ -1,6 +1,7 @@
 (ns kafka-connect-pg-sink.pg
   (:require [clojure.string :as string]
             [postgres.async :as pg]
+            [clojure.core.async :refer [<! go]]
             [clojure.tools.logging :as log]))
 
 
@@ -23,19 +24,23 @@
 
 (defn create-insert-sql
   "A copy of postgres.async.impl/create-insert-sql that addes WHERE NOT EXISTS"
-  [table data]
-  (str "INSERT INTO " table
-       (list-columns data)
-       " VALUES "
-       (list-params-seq data)
-       " ON CONFLICT DO UPDATE"))
+  [table data on-conflict-cols]
+  (let [insert (str "INSERT INTO " table
+                    (list-columns data)
+                    " VALUES "
+                    (list-params-seq data))]
+    (if on-conflict-cols
+      (str insert
+           " ON CONFLICT (" on-conflict-cols ") DO UPDATE SET "
+           (list-columns data) " = " (list-params-seq data))
+      insert)))
 
 (defn insert*
   "A copy of postgres.async/insert! that uses our custom insert sql"
-  [db table data]
-  (log/infof "Postgres insert: %s data: %s" (create-insert-sql table data)
-             (pr-str (flatten (map vals data))))
-  (let [resp (pg/execute! db (list* (create-insert-sql table data)
-                                    (flatten (map vals data))))]
-    (log/infof "Postgres result: %s" (pr-str resp))
-    resp))
+  [db table data on-conflict-cols]
+  (let [insert (create-insert-sql table data on-conflict-cols)
+        vs (flatten (map vals data))]
+    (log/infof "Postgres insert: %s data: %s" insert (pr-str vs))
+    (let [resp (pg/execute! db (list* insert vs))]
+      (go (log/infof "Postgres result: %s" (pr-str (<! resp))))
+      resp)))

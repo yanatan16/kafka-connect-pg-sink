@@ -20,6 +20,7 @@ psql --host $1 --port 5432 --user postgres -c 'create table if not exists id_tes
 echo '{"id":"1234567890123456789","fields":["foo","bar"],"guid":"12345678-90ab-cdef-1234-567890abcdef","someother_id":"12345678"}' \
     | kafkacat -P -t test-topic -b $1:9092
 
+
 curl $DOCKER:8083/connectors/pg-sink-test -XDELETE || echo "old connector removed"
 curl $1:8083/connectors -X POST -H'Content-type: application/json' -H'Accept: application/json' -d'{
   "name": "pg-sink-test",
@@ -32,9 +33,14 @@ curl $1:8083/connectors -X POST -H'Content-type: application/json' -H'Accept: ap
     "db.username": "postgres",
     "db.password": "password",
     "db.table": "id_test",
+    "insert.on.conflict.columns": "id1,field1,field2",
     "tuple.spec.json": "{\"id1\":[\"value\",\"id\"],\"field1\":[\"value\",\"fields\",0],\"field2\":[\"value\",\"fields\",1],\"guid\":[\"value\",\"guid\"],\"tertiary_id\":[\"value\",\"someother_id\"]}"
   }
 }'
 
 sleep 30
+psql --host docker --port 5432 --user postgres -c 'select * from id_test'
+echo '{"id":"1234567890123456789","fields":["foo","bar"],"guid":"UPDATED_GUID","someother_id":"12345678"}' \
+    | kafkacat -P -t test-topic -b $1:9092
+sleep 3
 psql --host docker --port 5432 --user postgres -c 'select * from id_test'

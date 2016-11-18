@@ -32,6 +32,9 @@
    (:db.table :type/string ::cfg/no-default-value :importance/high
                  "PostgreSQL Table Name")
 
+   (:insert.on.conflict.columns :type/string ::cfg/no-default-value :importance/medium
+                                "If set, insertion will use: ON CONFLICT (columns) DO UPDATE SET (cols)")
+
    (:tuple.spec.json :type/string ::cfg/no-default-value
                      (json-tuple-spec-validator) :importance/high
                      "Tuple generation specification in JSON. Should be a map of column names to extraction paths. Each extraction path is an array of strings and numbers that specifies a nested value to extract as that tuple-column value. Example: {\"id\": [\"key\",\"id\"], \"foo\": [\"value\",\"foo\"]}")
