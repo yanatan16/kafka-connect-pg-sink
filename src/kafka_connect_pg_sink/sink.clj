@@ -14,15 +14,11 @@
    {}
    tuple-spec))
 
-(defn put-records [{:keys [table db tuple-spec on-conflict-cols] :as state} records]
-  (log/debugf "Pushing %d kafka record to PostgreSQL." (count records))
-  (when (not-empty records)
-    (->> records
-         (map #(get-tuple tuple-spec %))
-         (#(insert* db table % on-conflict-cols))
-
-         ;;TODO: Make this a deferred action that flushes
-         <!!))
+(defn put-record [{:keys [table db tuple-spec on-conflict-cols] :as state} record]
+  (->> record
+       (get-tuple tuple-spec)
+       (#(insert* db table [%] on-conflict-cols))
+       <!!)
   state)
 
 (defn parse-json-tuple-spec [json]
@@ -49,7 +45,7 @@
  org.clojars.yanatan16.kafka.connect.pg.PostgresSink
  {:start start
   :stop stop
-  :put put-records}
+  :put-1 put-record}
 
  {:config-def (config)
   :start (fn [cfg _]
